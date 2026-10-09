@@ -1,0 +1,123 @@
+# Ejecutar en orden con REST Client (VS Code). Los IDs se toman de respuestas.
+@baseUrl = http://localhost:8080
+
+### Salud (200)
+GET {{baseUrl}}/health
+
+### Productos: éxito (200)
+GET {{baseUrl}}/api/productos/1
+
+### Productos: inexistente (404)
+GET {{baseUrl}}/api/productos/999999
+
+### Crear origen (201)
+# @name crearOrigen
+POST {{baseUrl}}/api/listas
+Content-Type: application/json
+
+{"nombre":"Regalos"}
+
+### Crear destino (201)
+# @name crearDestino
+POST {{baseUrl}}/api/listas
+Content-Type: application/json
+
+{"nombre":"Ofertas"}
+
+### Listar listas (200)
+GET {{baseUrl}}/api/listas
+
+### Obtener origen (200)
+GET {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}
+
+### Lista inválida (400)
+POST {{baseUrl}}/api/listas
+Content-Type: application/json
+
+{"nombre":""}
+
+### Lista inexistente (404)
+GET {{baseUrl}}/api/listas/9223372036854775807
+
+### Crear favorito (201)
+# @name crearFavorito
+POST {{baseUrl}}/api/favoritos
+Content-Type: application/json
+
+{"productoId":1,"nota":"Producto para revisar","listaId":{{crearOrigen.response.body.$.id}}}
+
+### Listar favoritos (200)
+GET {{baseUrl}}/api/favoritos
+
+### Obtener favorito (200)
+GET {{baseUrl}}/api/favoritos/{{crearFavorito.response.body.$.id}}
+
+### Actualizar favorito (200)
+PUT {{baseUrl}}/api/favoritos/{{crearFavorito.response.body.$.id}}
+Content-Type: application/json
+
+{"productoId":2,"nota":"Nota actualizada","listaId":{{crearOrigen.response.body.$.id}}}
+
+### Favoritos del origen (200)
+GET {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}/favoritos
+
+### No se puede borrar una lista con favoritos (409)
+DELETE {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}
+
+### Falta listaId (400)
+POST {{baseUrl}}/api/favoritos
+Content-Type: application/json
+
+{"productoId":1,"nota":"Sin lista"}
+
+### Favorito con lista inexistente (404)
+POST {{baseUrl}}/api/favoritos
+Content-Type: application/json
+
+{"productoId":1,"nota":"Error","listaId":9223372036854775807}
+
+### Favorito inexistente (404)
+GET {{baseUrl}}/api/favoritos/9223372036854775807
+
+### No se puede mover a la misma lista (400)
+POST {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}/mover-favoritos
+Content-Type: application/json
+
+{"destinoId":{{crearOrigen.response.body.$.id}}}
+
+### Destino inexistente (404; no modifica origen)
+POST {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}/mover-favoritos
+Content-Type: application/json
+
+{"destinoId":9223372036854775807}
+
+### Origen inexistente (404)
+POST {{baseUrl}}/api/listas/9223372036854775807/mover-favoritos
+Content-Type: application/json
+
+{"destinoId":{{crearDestino.response.body.$.id}}}
+
+### Mover todos los favoritos y eliminar origen (200)
+POST {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}/mover-favoritos
+Content-Type: application/json
+
+{"destinoId":{{crearDestino.response.body.$.id}}}
+
+### Origen eliminado (404)
+GET {{baseUrl}}/api/listas/{{crearOrigen.response.body.$.id}}
+
+### Destino contiene el favorito (200)
+GET {{baseUrl}}/api/listas/{{crearDestino.response.body.$.id}}/favoritos
+
+### PERSISTENCIA: detener y reiniciar la API antes de ejecutar esta consulta.
+# Debe seguir devolviendo el mismo favorito (200).
+GET {{baseUrl}}/api/favoritos/{{crearFavorito.response.body.$.id}}
+
+### Eliminar favorito (204)
+DELETE {{baseUrl}}/api/favoritos/{{crearFavorito.response.body.$.id}}
+
+### Eliminar destino vacío (204)
+DELETE {{baseUrl}}/api/listas/{{crearDestino.response.body.$.id}}
+
+### Swagger/OpenAPI (200)
+GET {{baseUrl}}/v3/api-docs
