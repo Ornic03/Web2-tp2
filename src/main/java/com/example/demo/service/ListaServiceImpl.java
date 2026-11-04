@@ -7,29 +7,37 @@ import com.example.demo.model.Favorito;
 import com.example.demo.model.Lista;
 import com.example.demo.repository.FavoritoRepository;
 import com.example.demo.repository.ListaRepository;
+import com.example.demo.security.UsuarioActual;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
+/** La autorización está en el service para proteger también llamadas fuera de HTTP. */
 @Service
-public class ListaService {
+public class ListaServiceImpl {
     private final ListaRepository listas;
     private final FavoritoRepository favoritos;
+    private final UsuarioActual usuarioActual;
 
-    public ListaService(ListaRepository listas, FavoritoRepository favoritos) {
+    public ListaServiceImpl(ListaRepository listas, FavoritoRepository favoritos, UsuarioActual usuarioActual) {
         this.listas = listas;
         this.favoritos = favoritos;
+        this.usuarioActual = usuarioActual;
     }
 
     public ListaResponse crear(ListaRequest request) {
-        return mapear(listas.guardar(new Lista(null, request.nombre().trim())));
+        return mapear(listas.guardar(new Lista(null, request.nombre().trim(), usuarioActual.id())));
     }
 
-    public List<ListaResponse> listar() { return listas.listar().stream().map(this::mapear).toList(); }
-    public ListaResponse obtenerPorId(Long id) { return mapear(buscar(id)); }
+    public List<ListaResponse> listar() {
+        List<Lista> resultado = usuarioActual.esAdmin() ? listas.listar() : listas.listarPorUsuarioId(usuarioActual.id());
+        return resultado.stream().map(this::mapear).toList();
+    }
+
+    public ListaResponse obtenerPorId(Long id) { return mapear(buscarAutorizada(id)); }
 
     public List<FavoritoResponse> listarFavoritos(Long id) {
-        buscar(id);
+        buscarAutorizada(id);
         return favoritos.buscarPorListaId(id).stream()
                 .map(f -> new FavoritoResponse(f.id(), f.productoId(), f.nota(), f.fechaAgregado(), f.listaId()))
                 .toList();
@@ -37,34 +45,37 @@ public class ListaService {
 
     @Transactional
     public void eliminar(Long id) {
-        buscar(id);
+        buscarAutorizada(id);
         if (!favoritos.buscarPorListaId(id).isEmpty()) {
             throw new ConflictoException("No se puede eliminar una lista que tiene favoritos");
         }
         listas.eliminarPorId(id);
     }
 
-    // Todas las escrituras usan la misma transacción: o se confirman todas o ninguna.
     @Transactional
     public MoverFavoritosResponse moverFavoritos(Long origenId, MoverFavoritosRequest request) {
-        buscar(origenId);
-        buscar(request.destinoId());
+        buscarAutorizada(origenId);
+        buscarAutorizada(request.destinoId()); // Proteger AMBOS extremos del movimiento.
         if (origenId.equals(request.destinoId())) {
             throw new SolicitudInvalidaException("La lista destino debe ser distinta de la lista origen");
         }
         List<Favorito> aMover = favoritos.buscarPorListaId(origenId);
         for (Favorito f : aMover) {
-            favoritos.guardar(new Favorito(f.id(), f.productoId(), f.nota(),
-                    f.fechaAgregado(), request.destinoId()));
+            favoritos.guardar(new Favorito(f.id(), f.productoId(), f.nota(), f.fechaAgregado(), request.destinoId()));
         }
         listas.eliminarPorId(origenId);
         return new MoverFavoritosResponse(origenId, request.destinoId(), aMover.size());
     }
 
-    private Lista buscar(Long id) {
-        return listas.buscarPorId(id)
+    /** 404 sólo si el id no existe; 403 si existe pero pertenece a otro usuario. */
+    public Lista buscarAutorizada(Long id) {
+        Lista lista = listas.buscarPorId(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe la lista con id " + id));
+        if (!usuarioActual.esAdmin() && !lista.usuarioId().equals(usuarioActual.id())) {
+            throw new AccesoProhibidoException("No tenés permiso sobre esta lista");
+        }
+        return lista;
     }
 
-    private ListaResponse mapear(Lista lista) { return new ListaResponse(lista.id(), lista.nombre()); }
+    private ListaResponse mapear(Lista lista) { return new ListaResponse(lista.id(), lista.nombre(), lista.usuarioId()); }
 }

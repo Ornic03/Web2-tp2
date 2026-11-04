@@ -12,18 +12,26 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class ListaRepositoryAdapter implements ListaRepository {
     private final ListaJpaRepository listas;
+    private final UsuarioJpaRepository usuarios;
 
-    public ListaRepositoryAdapter(ListaJpaRepository listas) { this.listas = listas; }
+    public ListaRepositoryAdapter(ListaJpaRepository listas, UsuarioJpaRepository usuarios) {
+        this.listas = listas;
+        this.usuarios = usuarios;
+    }
 
     @Override
     @Transactional
     public Lista guardar(Lista lista) {
-        return mapear(listas.saveAndFlush(new ListaEntity(lista.id(), lista.nombre())));
+        ListaEntity entity = new ListaEntity(lista.id(), lista.nombre(), usuarios.getReferenceById(lista.usuarioId()));
+        return mapear(listas.saveAndFlush(entity));
     }
 
     @Override
-    public List<Lista> listar() {
-        return listas.findAll(Sort.by("id")).stream().map(this::mapear).toList();
+    public List<Lista> listar() { return listas.findAll(Sort.by("id")).stream().map(this::mapear).toList(); }
+
+    @Override
+    public List<Lista> listarPorUsuarioId(Long usuarioId) {
+        return listas.findByUsuarioIdOrderByIdAsc(usuarioId).stream().map(this::mapear).toList();
     }
 
     @Override
@@ -33,8 +41,10 @@ public class ListaRepositoryAdapter implements ListaRepository {
     @Transactional
     public void eliminarPorId(Long id) {
         listas.deleteById(id);
-        listas.flush(); // La FK también protege contra eliminaciones con favoritos concurrentes.
+        listas.flush();
     }
 
-    private Lista mapear(ListaEntity entity) { return new Lista(entity.getId(), entity.getNombre()); }
+    private Lista mapear(ListaEntity entity) {
+        return new Lista(entity.getId(), entity.getNombre(), entity.getUsuario().getId());
+    }
 }

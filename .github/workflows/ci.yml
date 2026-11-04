@@ -1,0 +1,25 @@
+name: TP3 - Compilación y tests PostgreSQL
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+      - name: Instalar Java 21 y caché Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verificar Docker para Testcontainers
+        run: docker info
+      - name: Compilar y ejecutar pruebas (incluye Flyway en PostgreSQL real)
+        run: bash mvnw -B -ntp clean verify

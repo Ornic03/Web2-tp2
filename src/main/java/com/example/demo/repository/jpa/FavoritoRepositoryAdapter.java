@@ -44,6 +44,11 @@ public class FavoritoRepositoryAdapter implements FavoritoRepository {
     }
 
     @Override
+    public List<Favorito> buscarPorUsuarioId(Long usuarioId) {
+        return favoritos.findByListaUsuarioIdOrderByIdAsc(usuarioId).stream().map(this::mapear).toList();
+    }
+
+    @Override
     @Transactional
     public void eliminarPorId(Long id) {
         favoritos.deleteById(id);

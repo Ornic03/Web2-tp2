@@ -14,5 +14,7 @@ public interface FavoritoRepository {
 
     List<Favorito> buscarPorListaId(Long listaId);
 
+    List<Favorito> buscarPorUsuarioId(Long usuarioId);
+
     void eliminarPorId(Long id);
 }

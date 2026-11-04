@@ -49,6 +49,16 @@ public class GlobalExceptionHandler {
         return problema;
     }
 
+    @ExceptionHandler(AccesoProhibidoException.class)
+    public ProblemDetail handleProhibido(AccesoProhibidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ProblemDetail handleCredenciales(CredencialesInvalidasException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
     @ExceptionHandler(ConflictoException.class)
     public ProblemDetail handleConflicto(ConflictoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());

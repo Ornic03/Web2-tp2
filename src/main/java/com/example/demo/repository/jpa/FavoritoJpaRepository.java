@@ -5,4 +5,5 @@ import java.util.List;
 
 public interface FavoritoJpaRepository extends JpaRepository<FavoritoEntity, Long> {
     List<FavoritoEntity> findByListaIdOrderByIdAsc(Long listaId);
+    List<FavoritoEntity> findByListaUsuarioIdOrderByIdAsc(Long usuarioId);
 }

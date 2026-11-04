@@ -2,8 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.favorito.FavoritoResponse;
 import com.example.demo.dto.lista.*;
-import com.example.demo.service.ListaService;
+import com.example.demo.service.ListaServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +15,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/listas")
-@Tag(name = "Listas", description = "Organización de favoritos en PostgreSQL")
+@Tag(name = "Listas", description = "JWT requerido. Usuario: listas propias; ADMIN: todas las listas")
+@SecurityRequirement(name = "bearerAuth")
 public class ListaController {
-    private final ListaService service;
-    public ListaController(ListaService service) { this.service = service; }
+    private final ListaServiceImpl service;
+    public ListaController(ListaServiceImpl service) { this.service = service; }
 
     @PostMapping
     @Operation(summary = "Crear una lista", description = "Crea una lista vacía y devuelve 201 con su ubicación.")
@@ -29,11 +31,11 @@ public class ListaController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar listas", description = "Devuelve todas las listas ordenadas por id.")
+    @Operation(summary = "Listar listas", description = "Devuelve las listas propias, o todas si el rol es ADMIN.")
     public List<ListaResponse> listar() { return service.listar(); }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una lista", description = "Devuelve 404 si la lista no existe.")
+    @Operation(summary = "Obtener una lista", description = "Devuelve 404 si no existe, 403 si pertenece a otra persona.")
     public ListaResponse obtener(@PathVariable Long id) { return service.obtenerPorId(id); }
 
     @GetMapping("/{id}/favoritos")

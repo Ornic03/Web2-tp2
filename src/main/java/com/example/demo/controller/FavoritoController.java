@@ -4,6 +4,7 @@ import com.example.demo.dto.favorito.FavoritoRequest;
 import com.example.demo.dto.favorito.FavoritoResponse;
 import com.example.demo.service.FavoritoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/favoritos")
-@Tag(name = "Favoritos", description = "CRUD de favoritos almacenados en PostgreSQL")
+@Tag(name = "Favoritos", description = "JWT requerido. Acceso sólo a favoritos de las listas propias, salvo ADMIN")
+@SecurityRequirement(name = "bearerAuth")
 public class FavoritoController {
 
     private final FavoritoService favoritoService;
