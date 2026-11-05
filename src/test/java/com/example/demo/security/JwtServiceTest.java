@@ -12,7 +12,7 @@ class JwtServiceTest {
     void elTokenFirmadoContieneIdYRol() {
         var service = new JwtService("clave-de-pruebas-segura-con-mas-de-32-bytes-2026", 60);
         var jwt = service.crear(new Usuario(12L, "persona@ejemplo.com", "hash", Rol.ADMIN));
-        assertThat(service.validar(jwt)).isEqualTo(new UsuarioAutenticado(99L, Rol.ADMIN));
+        assertThat(service.validar(jwt)).isEqualTo(new UsuarioAutenticado(12L, Rol.ADMIN));
     }
 
     @Test
